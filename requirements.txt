@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+requests
+python-dotenv
+openai
+pydantic
+json
+time
+base64
+path
+unicodedata
+datetime
+relativedelta
