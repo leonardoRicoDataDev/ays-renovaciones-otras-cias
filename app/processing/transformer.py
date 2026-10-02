@@ -232,6 +232,7 @@ def build_insured_data(
     new_policy_id: str,
     risk_id: str,
     person_data: dict,
+    risk_data: dict,
 ) -> dict:
 
     return {
@@ -241,16 +242,32 @@ def build_insured_data(
         "subriesgo": SUBRIESGO,
         "estado": ESTADO_ASEGURADO,
         "riesgo_id": risk_id,
-
         "asegurado_id": person_data.get("asegurado_zoho_id"),
         "beneficiario_id": person_data.get("beneficiario_zoho_id"),
-
         "endoso": person_data.get("endoso"),
         "estado_del_endoso": person_data.get("estado_del_endoso"),
-        "beneficiario_oneroso": person_data.get(
-            "beneficiario_oneroso"
-        ),
+        "beneficiario_oneroso": person_data.get("beneficiario_oneroso"),
+        "valor_asegurado": risk_data.get("auto_valor_asegurado"),
+        "accesorios": risk_data.get("auto_valor_accesorios"),
+        "blindaje": risk_data.get("auto_valor_blindaje"),
     }
+
+
+# ============================================================
+# CONSTRUYE LA LLAVE DEL ASEGURADO
+# ============================================================
+
+
+def build_insured_key(
+    policy_number: str,
+    ramo: str,
+    aseguradora: str,
+    asegurado_identification: str,
+) -> str:
+
+    return (
+        f"{policy_number}_" f"{ramo}_" f"{aseguradora}_" f"{asegurado_identification}"
+    )
 
 
 # ============================================================

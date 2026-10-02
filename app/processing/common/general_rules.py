@@ -187,7 +187,7 @@ def calculate_certificate_end_date(
     if meses is None:
         raise ValueError(f"Periodicidad no soportada: {periodicidad}")
 
-    certificate_end = policy_start + relativedelta(months=meses) - relativedelta(days=1)
+    certificate_end = policy_start + relativedelta(months=meses)
 
     return format_date(certificate_end)
 

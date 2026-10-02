@@ -435,13 +435,6 @@ def get_risk_record_id(
 def update_risk(
     risk_data: dict,
 ) -> dict | None:
-    """
-    Busca el Riesgo mediante el Key Riesgo (placa)
-    y actualiza el registro encontrado.
-
-    Si el Riesgo no existe, continúa el proceso
-    sin crear un nuevo registro.
-    """
 
     key_riesgo = risk_data.get("auto_placa")
 
@@ -472,9 +465,6 @@ def update_risk(
         "Motor": risk_data.get("auto_motor"),
         "Chasis": risk_data.get("auto_chasis"),
         "C_dig_Fasecolda": risk_data.get("auto_fasecolda_cf"),
-        "Valor_asegurado1": risk_data.get("auto_valor_asegurado"),
-        "Accesorios1": risk_data.get("auto_valor_accesorios"),
-        "Blindaje": risk_data.get("auto_valor_blindaje"),
     }
 
     return update_record(
@@ -489,7 +479,9 @@ def update_risk(
 # ============================================================
 
 
-def create_insured(insured_data: dict) -> dict:
+def create_insured(
+    insured_data: dict,
+) -> dict:
 
     data = {
         "P_liza": insured_data.get("poliza_id"),
@@ -503,6 +495,9 @@ def create_insured(insured_data: dict) -> dict:
         "Endoso": insured_data.get("endoso"),
         "Estado_del_endoso": insured_data.get("estado_del_endoso"),
         "Beneficiario_Oneroso": insured_data.get("beneficiario_oneroso"),
+        "Valor_asegurado": insured_data.get("valor_asegurado"),
+        "Accesorios": insured_data.get("accesorios"),
+        "Blindaje": insured_data.get("blindaje"),
     }
 
     return create_record(
@@ -648,3 +643,80 @@ def resolve_insured_and_beneficiary(
         "endoso": ENDOSO_CON_BENEFICIARIO,
         "estado_del_endoso": ESTADO_DEL_ENDOSO,
     }
+
+
+# ============================================================
+# BUSCAR ID ASEGURADO
+# ============================================================
+def get_insured_record_id(
+    key_alterno_asegurado: str,
+) -> str | None:
+    """
+    Busca un registro en Riesgos1 mediante
+    Key_alterno_asegurado.
+
+    Retorna el ID del registro si existe.
+    """
+
+    if not key_alterno_asegurado:
+        return None
+
+    token_data = get_zoho_token_data()
+
+    access_token = token_data["access_token"]
+    api_domain = token_data.get(
+        "api_domain",
+        "https://www.zohoapis.com",
+    )
+
+    url = f"{api_domain}/crm/{ZOHO_API_VERSION}/" "Riesgos1/search"
+
+    params = {
+        "criteria": (f"(Key_alterno_asegurado:equals:" f"{key_alterno_asegurado})")
+    }
+
+    headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+
+    response = requests.get(
+        url,
+        headers=headers,
+        params=params,
+        timeout=30,
+    )
+
+    # Zoho puede responder 204 cuando no encuentra registros.
+    if response.status_code == 204:
+        return None
+
+    response.raise_for_status()
+
+    records = response.json().get("data", [])
+
+    if not records:
+        return None
+
+    return records[0].get("id")
+
+
+# ============================================================
+# ACTUALIZAR DATOS DEL ASEGURADO
+# ============================================================
+def update_insured(
+    record_id: str,
+    insured_data: dict,
+) -> dict:
+
+    data = {
+        "Asegurado": insured_data.get("asegurado_id"),
+        "Beneficiario": insured_data.get("beneficiario_id"),
+        "Riesgo": insured_data.get("riesgo_id"),
+        "Valor_asegurado": insured_data.get("valor_asegurado"),
+        "Accesorios": insured_data.get("accesorios"),
+        "Blindaje": insured_data.get("blindaje"),
+    }
+
+    return update_record(
+        module_api_name="Riesgos1",
+        record_id=record_id,
+        data=data,
+    )

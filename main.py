@@ -9,6 +9,7 @@ from app.processing.transformer import (
     transform_data,
     build_operation_data,
     build_insured_data,
+    build_insured_key,
 )
 
 from app.control.controller import ProcessController
@@ -23,7 +24,11 @@ from app.integrations.zoho.crm_records import (
     get_risk_record_id,
     update_task_extraction_status,
     resolve_insured_and_beneficiary,
+    get_insured_record_id,
+    update_insured,
 )
+
+from app.processing.allianz.allianz_rules import normalizar_numero_poliza_allianz
 
 # ============================================================
 # ID DE LA TAREA PARA PRUEBAS
@@ -135,7 +140,7 @@ def main():
 
         print(
             "\nZona de circulación extraída:",
-            extracted_data.get("auto_zona_circulacion")
+            extracted_data.get("auto_zona_circulacion"),
         )
         # ====================================================
         # 4. TRANSFORMAR DATOS
@@ -264,46 +269,128 @@ def main():
         )
 
         if zoho_risk_response is not None:
-
             print("\nRespuesta de Zoho:")
             print(zoho_risk_response)
 
         # ====================================================
-        # 8. CREAR ASEGURADO
+        # 8. PROCESAR ASEGURADO
+        # ====================================================
+
+        controller.actualizar_etapa(ProcessController.ETAPA_PROCESAR_ASEGURADO)
+
+        # ----------------------------------------------------
+        # Obtener ID del Riesgo
+        # ----------------------------------------------------
+
+        risk_id = get_risk_record_id(key_riesgo=risk_data["auto_placa"])
+
+        if not risk_id:
+            raise RuntimeError(
+                "No fue posible obtener el ID del riesgo "
+                f"para la placa {risk_data['auto_placa']}."
+            )
+
+        # ----------------------------------------------------
+        # Resolver Asegurado y Beneficiario
+        # ----------------------------------------------------
+
+        person_data = resolve_insured_and_beneficiary(
+            asegurado_id=extracted_data.get("asegurado1_ID"),
+            beneficiario_id=extracted_data.get("beneficiario_ID"),
+        )
+
+        # ====================================================
+        # CASO 1: SE CREÓ UNA NUEVA PÓLIZA
+        # CREAR ASEGURADO
         # ====================================================
 
         if transformed_data["action"] == "create":
 
-            controller.actualizar_etapa(ProcessController.ETAPA_CREAR_ASEGURADO)
-
             print("\n" + "=" * 60)
             print("CREACIÓN DE ASEGURADO")
             print("=" * 60)
-
-            risk_id = get_risk_record_id(key_riesgo=risk_data["auto_placa"])
-
-            if not risk_id:
-                raise RuntimeError(
-                    "No fue posible obtener el ID del riesgo "
-                    f"para la placa {risk_data['auto_placa']}."
-                )
-
-            person_data = resolve_insured_and_beneficiary(
-                asegurado_id=extracted_data.get("asegurado1_ID"),
-                beneficiario_id=extracted_data.get("beneficiario_ID"),
-            )
 
             insured_data = build_insured_data(
                 webhook_data=WEBHOOK_DATA,
                 new_policy_id=new_policy_id,
                 risk_id=risk_id,
                 person_data=person_data,
+                risk_data=risk_data,
             )
 
             print("\nDatos de Asegurado:")
             print(insured_data)
 
             zoho_insured_response = create_insured(
+                insured_data=insured_data,
+            )
+
+            print("\nRespuesta de Zoho:")
+            print(zoho_insured_response)
+
+        # ====================================================
+        # CASO 2: LA PÓLIZA YA EXISTE
+        # ACTUALIZAR ASEGURADO
+        # ====================================================
+
+        else:
+
+            print("\n" + "=" * 60)
+            print("ACTUALIZACIÓN DE ASEGURADO")
+            print("=" * 60)
+
+            # ------------------------------------------------
+            # Construir Key alterno del asegurado
+            # ------------------------------------------------
+
+            insured_key = build_insured_key(
+                policy_number=normalizar_numero_poliza_allianz(
+                    extracted_data.get("poliza_numero")
+                ),
+                ramo=WEBHOOK_DATA.get("ramo"),
+                aseguradora=WEBHOOK_DATA.get("aseguradora"),
+                asegurado_identification=extracted_data.get("asegurado1_ID"),
+            )
+
+            print("\nKey alterno del asegurado:")
+            print(insured_key)
+
+            # ------------------------------------------------
+            # Buscar asegurado existente
+            # ------------------------------------------------
+
+            insured_record_id = get_insured_record_id(key_alterno_asegurado=insured_key)
+
+            if not insured_record_id:
+                raise RuntimeError(
+                    "No se encontró el asegurado con "
+                    f"Key_alterno_asegurado: {insured_key}."
+                )
+
+            print("\nID del asegurado encontrado:")
+            print(insured_record_id)
+
+            # ------------------------------------------------
+            # Construir datos para actualizar
+            # ------------------------------------------------
+
+            insured_data = build_insured_data(
+                webhook_data=WEBHOOK_DATA,
+                new_policy_id=WEBHOOK_DATA.get("poliza_id"),
+                risk_id=risk_id,
+                person_data=person_data,
+                risk_data=risk_data,
+            )
+
+            print("\nDatos de Asegurado:")
+            print(insured_data)
+
+            # ------------------------------------------------
+            # Actualizar asegurado
+            # ------------------------------------------------
+
+            zoho_insured_response = update_insured(
+                record_id=insured_record_id,
                 insured_data=insured_data,
             )
 

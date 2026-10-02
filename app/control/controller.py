@@ -26,7 +26,7 @@ class ProcessController:
     ETAPA_CREAR_POLIZA = 4
     ETAPA_CREAR_OPERACION = 5
     ETAPA_ACTUALIZAR_RIESGO = 6
-    ETAPA_CREAR_ASEGURADO = 7
+    ETAPA_PROCESAR_ASEGURADO = 7
     ETAPA_FIN = 8
 
     def __init__(
