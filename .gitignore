@@ -1,5 +1,25 @@
+# Python
 __pycache__/
 *.py[cod]
+
+# Variables de entorno
 .env
+.env.*
+
+# Entornos virtuales
 venv/
 .venv/
+
+# Archivos temporales de la aplicación
+temp/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
