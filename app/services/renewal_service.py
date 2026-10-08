@@ -319,14 +319,15 @@ def process_renewal(webhook_data: dict) -> dict:
 
     # ========================================================
     # 10. ACTUALIZAR ESTADO DE LA TASK
+    # No se hará actualización del estado hasta que se guarde de manera automática los documentos de la tarea.
     # ========================================================
-
+    
     try:
-
-        update_task_extraction_status(
-            task_id=task_id,
-            status=controller.estado,
-        )
+        pass
+        # update_task_extraction_status(
+        #     task_id=task_id,
+        #     status=controller.estado,
+        # )
 
     except Exception:
         # Un error actualizando el estado de la Task
