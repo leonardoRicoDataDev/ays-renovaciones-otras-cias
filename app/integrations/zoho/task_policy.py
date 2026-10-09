@@ -1,6 +1,6 @@
 import requests
 
-from app.integrations.zoho.auth import refresh_access_token
+from app.integrations.zoho.auth import get_zoho_token_data
 
 # ============================================================
 # CONFIGURACIÓN
@@ -33,7 +33,7 @@ def get_zoho_record(
         Diccionario con los campos del registro.
     """
 
-    token_data = refresh_access_token()
+    token_data = get_zoho_token_data()
 
     access_token = token_data["access_token"]
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 import requests
-from app.integrations.zoho.auth import refresh_access_token
+from app.integrations.zoho.auth import get_zoho_token_data
 
 ZOHO_API_VERSION = "v8"
 
@@ -13,7 +13,7 @@ def get_task_attachments(task_id: str) -> list:
     y filtra únicamente los que corresponden a recibo y/o caratula
     """
 
-    token_data = refresh_access_token()
+    token_data = get_zoho_token_data()
 
     access_token = token_data["access_token"]
     api_domain = token_data.get(
@@ -69,7 +69,7 @@ def download_task_attachment(
     y lo almacena temporalmente dentro de: temp/{task_id}/
     """
 
-    token_data = refresh_access_token()
+    token_data = get_zoho_token_data()
 
     access_token = token_data["access_token"]
     api_domain = token_data.get(
